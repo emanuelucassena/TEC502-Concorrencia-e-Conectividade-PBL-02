@@ -1,0 +1,68 @@
+services:
+  broker-a:
+    build: ./broker
+    environment:
+      BROKER_ID: "A"
+      PORTA: "5001"
+      PEERS: "broker-b:5002,broker-c:5003"
+    ports: ["5001:5001"]
+
+  broker-b:
+    build: ./broker
+    environment:
+      BROKER_ID: "B"
+      PORTA: "5002"
+      PEERS: "broker-a:5001,broker-c:5003"
+    ports: ["5002:5002"]
+
+  broker-c:
+    build: ./broker
+    environment:
+      BROKER_ID: "C"
+      PORTA: "5003"
+      PEERS: "broker-a:5001,broker-b:5002"
+    ports: ["5003:5003"]
+
+  sensor-a:
+    build: ./sensor
+    environment:
+      SETOR_ID: "A"
+      BROKER_ADDR: "broker-a:5001"
+      INTERVALO_MS: "2000"
+    depends_on: [broker-a]
+
+  sensor-b:
+    build: ./sensor
+    environment:
+      SETOR_ID: "B"
+      BROKER_ADDR: "broker-b:5002"
+      INTERVALO_MS: "2000"
+    depends_on: [broker-b]
+
+  drone-1:
+    build: ./drone
+    environment:
+      DRONE_ID: "drone-1"
+      PORTA: "6001"
+    ports: ["6001:6001"]
+
+  drone-2:
+    build: ./drone
+    environment:
+      DRONE_ID: "drone-2"
+      PORTA: "6002"
+    ports: ["6002:6002"]
+
+  drone-3:
+    build: ./drone
+    environment:
+      DRONE_ID: "drone-3"
+      PORTA: "6003"
+    ports: ["6003:6003"]
+  
+  drone-4:
+    build: ./drone
+    environment:
+      DRONE_ID: "drone-4"
+      PORTA: "6004"
+    ports: ["6004:6004"]
