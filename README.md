@@ -1,6 +1,6 @@
 # Estreito de Ormuz
 
-> **Disciplina:** TEC502 — MI Concorrência e Conectividade 
+> **Disciplina:** TEC502 — MI Concorrência e Conectividade**
 > **Universidade Estadual de Feira de Santana (UEFS)**  
 > **Problema 2 — Desbloqueio do Estreito de Ormuz**
 
