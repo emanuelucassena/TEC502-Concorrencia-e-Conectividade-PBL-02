@@ -1,33 +1,49 @@
 services:
   broker-a:
-    build: ./broker
+    build:
+      context: .
+      dockerfile: Dockerfile.broker
     environment:
       BROKER_ID: "A"
       PORTA: "5001"
-      PEERS: "172.16.103.3:5002,172.16.103.4:5003"
-    ports: ["5001:5001"]
+      PEERS: "172.16.103.3:5002,172.16.103.4:5003,172.16.103.5:5004,172.16.103.5:5005"
+    ports:
+      - "5001:5001"
 
   sensor-a:
-    build: ./sensor
+    build:
+      context: .
+      dockerfile: Dockerfile.sensor
     environment:
       SETOR_ID: "A"
       BROKER_ADDR: "172.16.103.2:5001"
-      INTERVALO_MS: "2000"
-    depends_on: [broker-a]
-
-  sensor-b:
-    build: ./sensor
-    environment:
-      SETOR_ID: "B"
-      BROKER_ADDR: "172.16.103.2:5001"
-      INTERVALO_MS: "3500" # Intervalo diferente para gerar sobreposição
-    depends_on: [broker-a]
+      INTERVALO_MS: "12000"
+    depends_on:
+      - broker-a
 
   drone-1:
-    build: ./drone
+    build:
+      context: .
+      dockerfile: Dockerfile.drone
     environment:
       DRONE_ID: "drone-1"
       PORTA: "6001"
       ADDR: "172.16.103.2"
-      BROKERS: "172.16.103.2:5001,172.16.103.3:5002,172.16.103.4:5003"
-    ports: ["6001:6001"]
+      BROKERS: "172.16.103.2:5001,172.16.103.3:5002,172.16.103.4:5003,172.16.103.5:5004,172.16.103.5:5005"
+    ports:
+      - "6001:6001"
+
+  # Drone de reforço para ativar em tempo de execução
+  drone-5:
+    build:
+      context: .
+      dockerfile: Dockerfile.drone
+    profiles:
+      - extra
+    environment:
+      DRONE_ID: "drone-5"
+      PORTA: "6005"
+      ADDR: "172.16.103.2"
+      BROKERS: "172.16.103.2:5001,172.16.103.3:5002,172.16.103.4:5003,172.16.103.5:5004,172.16.103.5:5005"
+    ports:
+      - "6005:6005"
