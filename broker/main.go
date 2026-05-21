@@ -1,20 +1,34 @@
 package main
 
 import (
-    "log"
-    "os"
-    "strings"
+	"log"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
 )
 
 func main() {
-    id := os.Getenv("BROKER_ID")           // ex: "A"
-    porta := os.Getenv("PORTA")            // ex: "5001"
-    // Lista dos outros brokers: "broker-b:5002,broker-c:5003"
-    peersStr := os.Getenv("PEERS")
-    peers := strings.Split(peersStr, ",")
+	id := os.Getenv("BROKER_ID")
+	porta := os.Getenv("PORTA")
+	peersStr := os.Getenv("PEERS")
 
-    log.Printf("[Broker-%s] iniciando na porta %s", id, porta)
+	var peers []string
+	if strings.TrimSpace(peersStr) != "" {
+		peers = strings.Split(peersStr, ",")
+	} else {
+		log.Printf("[Broker-%s] Aviso: Iniciando sem peers configurados.", id)
+	}
 
-    b := NewBroker(id, porta, peers)
-    b.Iniciar() // bloqueia
+	log.Printf("[Broker-%s] iniciando na porta %s", id, porta)
+
+	b := NewBroker(id, porta, peers)
+	go b.Iniciar()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+	<-stop
+
+	log.Printf("[Broker-%s] sinal de encerramento recebido. Desligando com segurança...", id)
 }

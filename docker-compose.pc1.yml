@@ -1,0 +1,33 @@
+services:
+  broker-a:
+    build: ./broker
+    environment:
+      BROKER_ID: "A"
+      PORTA: "5001"
+      PEERS: "172.16.103.3:5002,172.16.103.4:5003"
+    ports: ["5001:5001"]
+
+  sensor-a:
+    build: ./sensor
+    environment:
+      SETOR_ID: "A"
+      BROKER_ADDR: "172.16.103.2:5001"
+      INTERVALO_MS: "2000"
+    depends_on: [broker-a]
+
+  sensor-b:
+    build: ./sensor
+    environment:
+      SETOR_ID: "B"
+      BROKER_ADDR: "172.16.103.2:5001"
+      INTERVALO_MS: "3500" # Intervalo diferente para gerar sobreposição
+    depends_on: [broker-a]
+
+  drone-1:
+    build: ./drone
+    environment:
+      DRONE_ID: "drone-1"
+      PORTA: "6001"
+      ADDR: "172.16.103.2"
+      BROKERS: "172.16.103.2:5001,172.16.103.3:5002,172.16.103.4:5003"
+    ports: ["6001:6001"]

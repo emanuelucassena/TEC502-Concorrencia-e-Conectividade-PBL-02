@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net"
+	"time"
 
 	"estreito-de-ormuz/shared"
 )
@@ -75,7 +76,7 @@ func (b *Broker) handleConexao(conn net.Conn) {
 		case shared.MsgMissaoConcluida:
 			b.droneConcluiu(msg)
 		case shared.MsgEncaminhar:
-    		b.ricart.ReceberEncaminhamento(msg, conn)
+			b.ricart.ReceberEncaminhamento(msg, conn)
 		}
 	}
 }
@@ -90,6 +91,11 @@ func (b *Broker) processarFila() {
 		msg := b.fila.Proximo()
 		log.Printf("[Broker-%s] processando evento da fila clock=%d", b.id, msg.Clock)
 		b.ricart.SolicitarLock(msg)
+
+		// MODO APRESENTAÇÃO: Força o broker a congelar por 4 segundos
+		// antes de puxar o próximo evento da fila.
+		
+		time.Sleep(4 * time.Second)
 	}
 }
 

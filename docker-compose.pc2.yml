@@ -1,0 +1,33 @@
+services:
+  broker-b:
+    build: ./broker
+    environment:
+      BROKER_ID: "B"
+      PORTA: "5002"
+      PEERS: "172.16.103.2:5001,172.16.103.4:5003"
+    ports: ["5002:5002"]
+
+  sensor-c:
+    build: ./sensor
+    environment:
+      SETOR_ID: "C"
+      BROKER_ADDR: "172.16.103.3:5002"
+      INTERVALO_MS: "2500"
+    depends_on: [broker-b]
+
+  sensor-d:
+    build: ./sensor
+    environment:
+      SETOR_ID: "D"
+      BROKER_ADDR: "172.16.103.3:5002"
+      INTERVALO_MS: "4000"
+    depends_on: [broker-b]
+
+  drone-2:
+    build: ./drone
+    environment:
+      DRONE_ID: "drone-2"
+      PORTA: "6002"
+      ADDR: "172.16.103.3"
+      BROKERS: "172.16.103.2:5001,172.16.103.3:5002,172.16.103.4:5003"
+    ports: ["6002:6002"]

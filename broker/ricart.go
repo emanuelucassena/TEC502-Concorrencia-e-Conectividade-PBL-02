@@ -13,7 +13,7 @@ import (
 type estadoRequisicao int
 
 const (
-	livre    estadoRequisicao = iota
+	livre estadoRequisicao = iota
 	querendo
 	detendo
 )
@@ -80,6 +80,11 @@ func (r *RicartManager) AtualizarHeartbeat(droneID string, clockRecebido int) {
 	r.atualizarClock(clockRecebido)
 	if d, ok := r.dronesConhecidos[droneID]; ok {
 		d.ultimoHB = time.Now()
+		// RECUPERAÇÃO: Tira o drone do estado Zumbi se a rede voltar
+		if d.status == shared.Falha {
+			log.Printf("[Ricart-%s] drone %s recuperado de falha", r.brokerID, droneID)
+			d.status = shared.Disponivel
+		}
 	}
 }
 
@@ -150,9 +155,13 @@ func (r *RicartManager) entrarSecaoCritica(msg shared.Mensagem) {
 		log.Printf("[Ricart-%s] sem drone disponível, encaminhando para peers", r.brokerID)
 		encaminhado := r.encaminharParaPeers(msg)
 		if !encaminhado {
-			// nenhum peer aceitou — recoloca na própria fila
-			log.Printf("[Ricart-%s] nenhum peer disponível, recolocando na fila", r.brokerID)
-			r.filaBroker.Adicionar(msg)
+			log.Printf("[Ricart-%s] nenhum peer disponível, aguardando liberação de drones...", r.brokerID)
+
+			
+			go func() {
+				time.Sleep(2 * time.Second) 
+				r.filaBroker.Adicionar(msg)
+			}()
 		}
 		r.liberarLock()
 		return
@@ -163,7 +172,6 @@ func (r *RicartManager) entrarSecaoCritica(msg shared.Mensagem) {
 	r.liberarLock()
 }
 
-// Tenta encaminhar para um peer que tenha drone disponível
 func (r *RicartManager) encaminharParaPeers(msg shared.Mensagem) bool {
 	r.mu.Lock()
 	clock := r.clock + 1
@@ -186,7 +194,6 @@ func (r *RicartManager) encaminharParaPeers(msg shared.Mensagem) bool {
 	return false
 }
 
-// Tenta encaminhar para um peer específico — aguarda resposta
 func (r *RicartManager) tentarEncaminhar(peer string, msg shared.Mensagem) bool {
 	conn, err := net.DialTimeout("tcp", peer, 3*time.Second)
 	if err != nil {
@@ -198,7 +205,6 @@ func (r *RicartManager) tentarEncaminhar(peer string, msg shared.Mensagem) bool 
 		return false
 	}
 
-	// Aguarda resposta do peer — aceitou ou recusou
 	conn.SetReadDeadline(time.Now().Add(3 * time.Second))
 	resposta, err := shared.ReceberMensagem(conn)
 	if err != nil {
@@ -231,6 +237,9 @@ func (r *RicartManager) despacharDrone(drone *infoDrone, msg shared.Mensagem) {
 		De:      r.brokerID,
 		Clock:   clock,
 	}
+
+	// LATÊNCIA ARTIFICIAL: Pausa antes de mandar a missão para o Drone
+	time.Sleep(2 * time.Second)
 	shared.EnviarMensagem(conn, despacho)
 
 	r.mu.Lock()
@@ -254,7 +263,9 @@ func (r *RicartManager) liberarLock() {
 		Clock: clock,
 	}
 	for _, p := range espera {
+		time.Sleep(1 * time.Second)
 		shared.EnviarMensagem(p.conn, ok)
+		log.Printf("[Ricart-%s] liberando OK retido enviando para outro Broker", r.brokerID)
 	}
 }
 
@@ -281,6 +292,8 @@ func (r *RicartManager) ReceberRequest(msg shared.Mensagem, conn net.Conn) {
 		log.Printf("[Ricart-%s] segurando OK para %s clock=%d", r.brokerID, req.BrokerID, req.Clock)
 	} else {
 		r.mu.Unlock()
+		time.Sleep(1 * time.Second)
+
 		shared.EnviarMensagem(conn, ok)
 		log.Printf("[Ricart-%s] OK enviado para %s clock=%d", r.brokerID, req.BrokerID, req.Clock)
 	}
@@ -293,8 +306,6 @@ func (r *RicartManager) ReceberOK(msg shared.Mensagem) {
 	r.canalOK <- struct{}{}
 }
 
-// Recebe requisição encaminhada de outro broker
-// Retorna true se aceitou (tem drone disponível)
 func (r *RicartManager) ReceberEncaminhamento(msg shared.Mensagem, conn net.Conn) {
 	r.mu.Lock()
 	r.atualizarClock(msg.Clock)
@@ -307,7 +318,6 @@ func (r *RicartManager) ReceberEncaminhamento(msg shared.Mensagem, conn net.Conn
 	r.mu.Unlock()
 
 	if drone == nil {
-		// Não tem drone — recusa
 		log.Printf("[Ricart-%s] encaminhamento recusado — sem drone", r.brokerID)
 		recusa := shared.Mensagem{
 			Tipo:  shared.MsgSemDrone,
@@ -318,7 +328,6 @@ func (r *RicartManager) ReceberEncaminhamento(msg shared.Mensagem, conn net.Conn
 		return
 	}
 
-	// Aceita — responde OK e despacha
 	log.Printf("[Ricart-%s] encaminhamento aceito — despachando %s", r.brokerID, drone.id)
 	aceite := shared.Mensagem{
 		Tipo:  shared.MsgOK,
@@ -360,8 +369,18 @@ func (r *RicartManager) enviarParaPeer(addr string, msg shared.Mensagem) {
 		r.canalOK <- struct{}{}
 		return
 	}
-	defer conn.Close()
+
 	shared.EnviarMensagem(conn, msg)
+
+	go func() {
+		defer conn.Close()
+		resposta, err := shared.ReceberMensagem(conn)
+		if err == nil && resposta.Tipo == shared.MsgOK {
+			r.ReceberOK(resposta)
+		} else {
+			r.canalOK <- struct{}{}
+		}
+	}()
 }
 
 func extrairPrioridade(msg shared.Mensagem) int {

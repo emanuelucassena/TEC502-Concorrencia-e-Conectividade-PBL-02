@@ -1,0 +1,17 @@
+services:
+  drone-4:
+    build: ./drone
+    environment:
+      DRONE_ID: "drone-4"
+      PORTA: "6004"
+      ADDR: "172.16.103.5"
+      BROKERS: "172.16.103.2:5001,172.16.103.3:5002,172.16.103.4:5003"
+    ports: ["6004:6004"]
+
+  sensor-g:
+    build: ./sensor
+    environment:
+      SETOR_ID: "G"
+      # Aponta para o Broker A que está no PC 1
+      BROKER_ADDR: "172.16.103.2:5001" 
+      INTERVALO_MS: "2000"

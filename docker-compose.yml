@@ -1,6 +1,11 @@
 services:
+  # ==========================================
+  # BROKERS
+  # ==========================================
   broker-a:
-    build: ./broker
+    build:
+      context: .
+      dockerfile: Dockerfile.broker
     environment:
       BROKER_ID: "A"
       PORTA: "5001"
@@ -8,7 +13,9 @@ services:
     ports: ["5001:5001"]
 
   broker-b:
-    build: ./broker
+    build:
+      context: .
+      dockerfile: Dockerfile.broker
     environment:
       BROKER_ID: "B"
       PORTA: "5002"
@@ -16,53 +23,131 @@ services:
     ports: ["5002:5002"]
 
   broker-c:
-    build: ./broker
+    build:
+      context: .
+      dockerfile: Dockerfile.broker
     environment:
       BROKER_ID: "C"
       PORTA: "5003"
       PEERS: "broker-a:5001,broker-b:5002"
     ports: ["5003:5003"]
 
-  sensor-a:
-    build: ./sensor
-    environment:
-      SETOR_ID: "A"
-      BROKER_ADDR: "broker-a:5001"
-      INTERVALO_MS: "2000"
-    depends_on: [broker-a]
-
-  sensor-b:
-    build: ./sensor
-    environment:
-      SETOR_ID: "B"
-      BROKER_ADDR: "broker-b:5002"
-      INTERVALO_MS: "2000"
-    depends_on: [broker-b]
-
+  # ==========================================
+  # DRONES
+  # ==========================================
   drone-1:
-    build: ./drone
+    build:
+      context: .
+      dockerfile: Dockerfile.drone
     environment:
       DRONE_ID: "drone-1"
       PORTA: "6001"
+      ADDR: "drone-1"
+      BROKERS: "broker-a:5001,broker-b:5002,broker-c:5003"
     ports: ["6001:6001"]
 
   drone-2:
-    build: ./drone
+    build:
+      context: .
+      dockerfile: Dockerfile.drone
     environment:
       DRONE_ID: "drone-2"
       PORTA: "6002"
+      ADDR: "drone-2"
+      BROKERS: "broker-a:5001,broker-b:5002,broker-c:5003"
     ports: ["6002:6002"]
 
   drone-3:
-    build: ./drone
+    build:
+      context: .
+      dockerfile: Dockerfile.drone
     environment:
       DRONE_ID: "drone-3"
       PORTA: "6003"
+      ADDR: "drone-3"
+      BROKERS: "broker-a:5001,broker-b:5002,broker-c:5003"
     ports: ["6003:6003"]
-  
+
   drone-4:
-    build: ./drone
+    build:
+      context: .
+      dockerfile: Dockerfile.drone
     environment:
       DRONE_ID: "drone-4"
       PORTA: "6004"
+      ADDR: "drone-4"
+      BROKERS: "broker-a:5001,broker-b:5002,broker-c:5003"
     ports: ["6004:6004"]
+
+  # ==========================================
+  # SENSORES (Em Câmera Lenta)
+  # ==========================================
+  sensor-a:
+    build:
+      context: .
+      dockerfile: Dockerfile.sensor
+    environment:
+      SETOR_ID: "A"
+      BROKER_ADDR: "broker-a:5001"
+      INTERVALO_MS: "10000"
+    depends_on: [broker-a]
+
+  sensor-b:
+    build:
+      context: .
+      dockerfile: Dockerfile.sensor
+    environment:
+      SETOR_ID: "B"
+      BROKER_ADDR: "broker-a:5001"
+      INTERVALO_MS: "15000"
+    depends_on: [broker-a]
+
+  sensor-c:
+    build:
+      context: .
+      dockerfile: Dockerfile.sensor
+    environment:
+      SETOR_ID: "C"
+      BROKER_ADDR: "broker-b:5002"
+      INTERVALO_MS: "12000"
+    depends_on: [broker-b]
+
+  sensor-d:
+    build:
+      context: .
+      dockerfile: Dockerfile.sensor
+    environment:
+      SETOR_ID: "D"
+      BROKER_ADDR: "broker-b:5002"
+      INTERVALO_MS: "18000"
+    depends_on: [broker-b]
+
+  sensor-e:
+    build:
+      context: .
+      dockerfile: Dockerfile.sensor
+    environment:
+      SETOR_ID: "E"
+      BROKER_ADDR: "broker-c:5003"
+      INTERVALO_MS: "14000"
+    depends_on: [broker-c]
+
+  sensor-f:
+    build:
+      context: .
+      dockerfile: Dockerfile.sensor
+    environment:
+      SETOR_ID: "F"
+      BROKER_ADDR: "broker-c:5003"
+      INTERVALO_MS: "20000"
+    depends_on: [broker-c]
+
+  sensor-g:
+    build:
+      context: .
+      dockerfile: Dockerfile.sensor
+    environment:
+      SETOR_ID: "G"
+      BROKER_ADDR: "broker-a:5001"
+      INTERVALO_MS: "16000"
+    depends_on: [broker-a]
