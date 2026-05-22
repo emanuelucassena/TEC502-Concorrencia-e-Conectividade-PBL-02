@@ -157,9 +157,8 @@ func (r *RicartManager) entrarSecaoCritica(msg shared.Mensagem) {
 		if !encaminhado {
 			log.Printf("[Ricart-%s] nenhum peer disponível, aguardando liberação de drones...", r.brokerID)
 
-			
 			go func() {
-				time.Sleep(2 * time.Second) 
+				time.Sleep(2 * time.Second)
 				r.filaBroker.Adicionar(msg)
 			}()
 		}
@@ -195,7 +194,8 @@ func (r *RicartManager) encaminharParaPeers(msg shared.Mensagem) bool {
 }
 
 func (r *RicartManager) tentarEncaminhar(peer string, msg shared.Mensagem) bool {
-	conn, err := net.DialTimeout("tcp", peer, 3*time.Second)
+	
+	conn, err := net.DialTimeout("tcp", peer, 8*time.Second)
 	if err != nil {
 		return false
 	}
@@ -205,7 +205,8 @@ func (r *RicartManager) tentarEncaminhar(peer string, msg shared.Mensagem) bool 
 		return false
 	}
 
-	conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	// Ajustado para 8 segundos
+	conn.SetReadDeadline(time.Now().Add(8 * time.Second))
 	resposta, err := shared.ReceberMensagem(conn)
 	if err != nil {
 		return false
@@ -215,7 +216,7 @@ func (r *RicartManager) tentarEncaminhar(peer string, msg shared.Mensagem) bool 
 }
 
 func (r *RicartManager) despacharDrone(drone *infoDrone, msg shared.Mensagem) {
-	conn, err := net.DialTimeout("tcp", drone.addr, 3*time.Second)
+	conn, err := net.DialTimeout("tcp", drone.addr, 8*time.Second)
 	if err != nil {
 		log.Printf("[Ricart-%s] falha ao conectar drone %s: %v", r.brokerID, drone.id, err)
 		r.mu.Lock()
@@ -239,7 +240,7 @@ func (r *RicartManager) despacharDrone(drone *infoDrone, msg shared.Mensagem) {
 	}
 
 	// LATÊNCIA ARTIFICIAL: Pausa antes de mandar a missão para o Drone
-	time.Sleep(2 * time.Second)
+	time.Sleep(3 * time.Second)
 	shared.EnviarMensagem(conn, despacho)
 
 	r.mu.Lock()
@@ -292,7 +293,9 @@ func (r *RicartManager) ReceberRequest(msg shared.Mensagem, conn net.Conn) {
 		log.Printf("[Ricart-%s] segurando OK para %s clock=%d", r.brokerID, req.BrokerID, req.Clock)
 	} else {
 		r.mu.Unlock()
-		time.Sleep(1 * time.Second)
+
+		// Pausa de 2 segundos antes de confirmar o OK
+		time.Sleep(2 * time.Second)
 
 		shared.EnviarMensagem(conn, ok)
 		log.Printf("[Ricart-%s] OK enviado para %s clock=%d", r.brokerID, req.BrokerID, req.Clock)
@@ -363,7 +366,8 @@ func (r *RicartManager) MonitorarHeartbeats() {
 }
 
 func (r *RicartManager) enviarParaPeer(addr string, msg shared.Mensagem) {
-	conn, err := net.DialTimeout("tcp", addr, 3*time.Second)
+	
+	conn, err := net.DialTimeout("tcp", addr, 8*time.Second)
 	if err != nil {
 		log.Printf("[Ricart-%s] peer %s indisponível", r.brokerID, addr)
 		r.canalOK <- struct{}{}
