@@ -1,13 +1,11 @@
 services:
-  # ==========================================
-  # BROKERS - PC 2
-  # ==========================================
+
   broker-d:
     build: { context: ., dockerfile: Dockerfile.broker }
     environment:
       BROKER_ID: "D"
       PORTA: "5004"
-      PEERS: "172.16.103.2:5001,172.16.103.2:5002,172.16.103.2:5003,172.16.103.3:5005"
+      PEERS: "172.16.103.2:5001,172.16.103.2:5002,172.16.103.2:5003,broker-e:5005"
     ports: ["5004:5004"]
 
   broker-e:
@@ -15,19 +13,17 @@ services:
     environment:
       BROKER_ID: "E"
       PORTA: "5005"
-      PEERS: "172.16.103.2:5001,172.16.103.2:5002,172.16.103.2:5003,172.16.103.3:5004"
+      PEERS: "172.16.103.2:5001,172.16.103.2:5002,172.16.103.2:5003,broker-d:5004"
     ports: ["5005:5005"]
 
-  # ==========================================
-  # DRONES - PC 2
-  # ==========================================
+
   drone-3:
     build: { context: ., dockerfile: Dockerfile.drone }
     environment:
       DRONE_ID: "drone-3"
       PORTA: "6003"
       ADDR: "172.16.103.3"
-      BROKERS: "172.16.103.2:5001,172.16.103.2:5002,172.16.103.2:5003,172.16.103.3:5004,172.16.103.3:5005"
+      BROKERS: "172.16.103.2:5001,172.16.103.2:5002,172.16.103.2:5003,broker-d:5004,broker-e:5005"
     ports: ["6003:6003"]
 
   drone-4:
@@ -36,18 +32,16 @@ services:
       DRONE_ID: "drone-4"
       PORTA: "6004"
       ADDR: "172.16.103.3"
-      BROKERS: "172.16.103.2:5001,172.16.103.2:5002,172.16.103.2:5003,172.16.103.3:5004,172.16.103.3:5005"
+      BROKERS: "172.16.103.2:5001,172.16.103.2:5002,172.16.103.2:5003,broker-d:5004,broker-e:5005"
     ports: ["6004:6004"]
 
-  # ==========================================
-  # SENSORES - PC 2
-  # ==========================================
+ 
   sensor-d:
     build: { context: ., dockerfile: Dockerfile.sensor }
-    environment: { SETOR_ID: "D", BROKER_ADDR: "172.16.103.3:5004", INTERVALO_MS: "18000" }
+    environment: { SETOR_ID: "D", BROKER_ADDR: "broker-d:5004", INTERVALO_MS: "18000" }
     depends_on: [broker-d]
 
   sensor-e:
     build: { context: ., dockerfile: Dockerfile.sensor }
-    environment: { SETOR_ID: "E", BROKER_ADDR: "172.16.103.3:5005", INTERVALO_MS: "16000" }
+    environment: { SETOR_ID: "E", BROKER_ADDR: "broker-e:5005", INTERVALO_MS: "16000" }
     depends_on: [broker-e]

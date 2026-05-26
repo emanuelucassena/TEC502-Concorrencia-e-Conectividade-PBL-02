@@ -92,10 +92,9 @@ func (b *Broker) processarFila() {
 		log.Printf("[Broker-%s] processando evento da fila clock=%d", b.id, msg.Clock)
 		b.ricart.SolicitarLock(msg)
 
-		// MODO APRESENTAÇÃO: Força o broker a congelar por 4 segundos
-		// antes de puxar o próximo evento da fila.
 		
-		time.Sleep(4 * time.Second)
+		
+		time.Sleep(8 * time.Second)
 	}
 }
 

@@ -1,12 +1,11 @@
 services:
-  # BROKERS - PC 1
-  
+
   broker-a:
     build: { context: ., dockerfile: Dockerfile.broker }
     environment:
       BROKER_ID: "A"
       PORTA: "5001"
-      PEERS: "172.16.103.2:5002,172.16.103.2:5003,172.16.103.3:5004,172.16.103.3:5005"
+      PEERS: "broker-b:5002,broker-c:5003,172.16.103.3:5004,172.16.103.3:5005"
     ports: ["5001:5001"]
 
   broker-b:
@@ -14,7 +13,7 @@ services:
     environment:
       BROKER_ID: "B"
       PORTA: "5002"
-      PEERS: "172.16.103.2:5001,172.16.103.2:5003,172.16.103.3:5004,172.16.103.3:5005"
+      PEERS: "broker-a:5001,broker-c:5003,172.16.103.3:5004,172.16.103.3:5005"
     ports: ["5002:5002"]
 
   broker-c:
@@ -22,17 +21,17 @@ services:
     environment:
       BROKER_ID: "C"
       PORTA: "5003"
-      PEERS: "172.16.103.2:5001,172.16.103.2:5002,172.16.103.3:5004,172.16.103.3:5005"
+      PEERS: "broker-a:5001,broker-b:5002,172.16.103.3:5004,172.16.103.3:5005"
     ports: ["5003:5003"]
 
-  # DRONES - PC 1
+
   drone-1:
     build: { context: ., dockerfile: Dockerfile.drone }
     environment:
       DRONE_ID: "drone-1"
       PORTA: "6001"
       ADDR: "172.16.103.2"
-      BROKERS: "172.16.103.2:5001,172.16.103.2:5002,172.16.103.2:5003,172.16.103.3:5004,172.16.103.3:5005"
+      BROKERS: "broker-a:5001,broker-b:5002,broker-c:5003,172.16.103.3:5004,172.16.103.3:5005"
     ports: ["6001:6001"]
 
   drone-2:
@@ -41,7 +40,7 @@ services:
       DRONE_ID: "drone-2"
       PORTA: "6002"
       ADDR: "172.16.103.2"
-      BROKERS: "172.16.103.2:5001,172.16.103.2:5002,172.16.103.2:5003,172.16.103.3:5004,172.16.103.3:5005"
+      BROKERS: "broker-a:5001,broker-b:5002,broker-c:5003,172.16.103.3:5004,172.16.103.3:5005"
     ports: ["6002:6002"]
 
   drone-5:
@@ -51,22 +50,21 @@ services:
       DRONE_ID: "drone-5"
       PORTA: "6005"
       ADDR: "172.16.103.2"
-      BROKERS: "172.16.103.2:5001,172.16.103.2:5002,172.16.103.2:5003,172.16.103.3:5004,172.16.103.3:5005"
+      BROKERS: "broker-a:5001,broker-b:5002,broker-c:5003,172.16.103.3:5004,172.16.103.3:5005"
     ports: ["6005:6005"]
 
-  # SENSORES - PC 1
-  
+ 
   sensor-a:
     build: { context: ., dockerfile: Dockerfile.sensor }
-    environment: { SETOR_ID: "A", BROKER_ADDR: "172.16.103.2:5001", INTERVALO_MS: "12000" }
+    environment: { SETOR_ID: "A", BROKER_ADDR: "broker-a:5001", INTERVALO_MS: "12000" }
     depends_on: [broker-a]
 
   sensor-b:
     build: { context: ., dockerfile: Dockerfile.sensor }
-    environment: { SETOR_ID: "B", BROKER_ADDR: "172.16.103.2:5002", INTERVALO_MS: "15000" }
+    environment: { SETOR_ID: "B", BROKER_ADDR: "broker-b:5002", INTERVALO_MS: "15000" }
     depends_on: [broker-b]
 
   sensor-c:
     build: { context: ., dockerfile: Dockerfile.sensor }
-    environment: { SETOR_ID: "C", BROKER_ADDR: "172.16.103.2:5003", INTERVALO_MS: "14000" }
+    environment: { SETOR_ID: "C", BROKER_ADDR: "broker-c:5003", INTERVALO_MS: "14000" }
     depends_on: [broker-c]

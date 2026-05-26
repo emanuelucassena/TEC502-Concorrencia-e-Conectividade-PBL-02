@@ -59,6 +59,7 @@ func (s *Sensor) Iniciar() {
 }
 
 func (s *Sensor) loop(conn net.Conn) {
+	time.Sleep(5 * time.Second)
 	for {
 		clock := s.tickClock()
 		evento := s.gerarEvento(clock)

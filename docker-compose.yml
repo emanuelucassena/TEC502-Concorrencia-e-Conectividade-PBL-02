@@ -1,5 +1,7 @@
 services:
- 
+  # ==========================================
+  # BROKERS
+  # ==========================================
   broker-a:
     build: { context: ., dockerfile: Dockerfile.broker }
     environment:
@@ -40,7 +42,9 @@ services:
       PEERS: "broker-a:5001,broker-b:5002,broker-c:5003,broker-d:5004"
     ports: ["5005:5005"]
 
- 
+  # ==========================================
+  # DRONES (Ajustados com ADDR: 0.0.0.0)
+  # ==========================================
   drone-1:
     build: { context: ., dockerfile: Dockerfile.drone }
     environment:
@@ -83,11 +87,13 @@ services:
     environment:
       DRONE_ID: "drone-5"
       PORTA: "6005"
-      ADDR: "drone-5"
+      ADDR: "0.0.0.0"
       BROKERS: "broker-a:5001,broker-b:5002,broker-c:5003,broker-d:5004,broker-e:5005"
     ports: ["6005:6005"]
 
- 
+  # ==========================================
+  # SENSORES
+  # ==========================================
   sensor-a:
     build: { context: ., dockerfile: Dockerfile.sensor }
     environment: { SETOR_ID: "A", BROKER_ADDR: "broker-a:5001", INTERVALO_MS: "12000" }

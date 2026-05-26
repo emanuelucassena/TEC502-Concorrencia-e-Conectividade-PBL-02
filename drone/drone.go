@@ -14,7 +14,7 @@ type Drone struct {
 	mu     sync.Mutex
 	id     string
 	porta  string
-	addr   string // IP público + porta — enviado no registro
+	addr   string 
 	status shared.StatusDrone
 	clock  int
 	missao chan shared.Mensagem
@@ -48,6 +48,7 @@ func (d *Drone) tickClock() int {
 }
 
 func (d *Drone) Iniciar(brokers []string) {
+	log.Printf("🚀 [Sistema-%s] Iniciando motores e calibrando sensores...", d.id)
 	go d.escutar()
 	go d.heartbeatLoop(brokers)
 	go d.executarMissoes(brokers)
@@ -58,9 +59,9 @@ func (d *Drone) Iniciar(brokers []string) {
 func (d *Drone) escutar() {
 	ln, err := net.Listen("tcp", ":"+d.porta)
 	if err != nil {
-		log.Fatalf("[Drone-%s] falha ao escutar: %v", d.id, err)
+		log.Fatalf("[ERRO-%s] 💥 Falha crítica no rádio: %v", d.id, err)
 	}
-	log.Printf("[Drone-%s] aguardando despachos em :%s", d.id, d.porta)
+	log.Printf("📡 [Rádio-%s] Frequência aberta. Aguardando coordenadas na porta %s", d.id, d.porta)
 
 	for {
 		conn, err := ln.Accept()
@@ -81,11 +82,11 @@ func (d *Drone) handleConexao(conn net.Conn) {
 		d.atualizarClock(msg.Clock)
 
 		if msg.Tipo == shared.MsgDespacho {
-			log.Printf("[Drone-%s] despacho recebido clock=%d", d.id, msg.Clock)
+			log.Printf("📥 [Comando-%s] Recebida ordem de despacho da malha de Brokers! (Clock: %d)", d.id, msg.Clock)
 			select {
 			case d.missao <- msg:
 			default:
-				log.Printf("[Drone-%s] já em missão, despacho ignorado", d.id)
+				log.Printf("⚠️ [Comando-%s] Ordem ignorada: O drone já encontra-se em operação fora da base.", d.id)
 			}
 		}
 	}
@@ -105,17 +106,26 @@ func (d *Drone) executarMissao(msg shared.Mensagem, brokers []string) {
 	var evento shared.EventoMaritimo
 	json.Unmarshal(msg.Payload, &evento)
 
-	log.Printf("[Drone-%s] missão iniciada: tipo=%s setor=%s prioridade=%d",
-		d.id, evento.Tipo, evento.SetorID, evento.Prioridade)
+	// Cálculo dinâmico de tempo: Ocorrências mais difíceis (Prioridade 1/2) demoram mais.
+	
+	tempoBase := 3
+	pesoPrioridade := evento.Prioridade 
+	duracao := time.Duration(tempoBase+pesoPrioridade) * time.Second
 
-	duracao := time.Duration(10+evento.Prioridade*2) * time.Second
+	log.Printf("\n🚁 ═════════ DECOLAGEM: %s ═════════", d.id)
+	log.Printf("📍 Destino    : Setor %s", evento.SetorID)
+	log.Printf("🔥 Ocorrência : %s", evento.Tipo)
+	log.Printf("⏱️ ETA        : Tempo estimado de voo e resolução de %d segundos.", int(duracao.Seconds()))
+	log.Printf("═══════════════════════════════════════════════\n")
+
+	// Simula o tempo de viagem e resolução do problema no mar
 	time.Sleep(duracao)
 
 	d.mu.Lock()
 	d.status = shared.Disponivel
 	d.mu.Unlock()
 
-	log.Printf("[Drone-%s] missão concluída", d.id)
+	log.Printf("✅ [Retorno-%s] Operação '%s' no Setor %s bem-sucedida! Notificando a malha de Brokers...", d.id, evento.Tipo, evento.SetorID)
 	d.notificarMissaoConcluida(brokers)
 }
 
@@ -149,10 +159,10 @@ func (d *Drone) notificarMissaoConcluida(brokers []string) {
 }
 
 func (d *Drone) heartbeatLoop(brokers []string) {
-	// Aguarda brokers subirem
-	time.Sleep(2 * time.Second)
+	
+	time.Sleep(3 * time.Second)
 
-	// Registro inicial — informa endereço real ao broker
+	
 	d.enviarRegistro(brokers)
 
 	for {
@@ -202,7 +212,7 @@ func (d *Drone) enviarRegistro(brokers []string) {
 		Clock:   clock,
 	}
 
-	log.Printf("[Drone-%s] enviando registro addr=%s", d.id, d.addr)
+	log.Printf("🛰️ [Telemetria-%s] Transmitindo registro de IP (%s) para pareamento com a malha...", d.id, d.addr)
 
 	for _, addr := range brokers {
 		go d.enviarParaBroker(addr, msg)
